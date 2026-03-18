@@ -117,17 +117,18 @@ class Embedder:
     def __init__(self, model, vocabulary):
         self.model = model
         self.vocabulary = vocabulary
+        self.norm_embedding = self.model.embedding / np.linalg.norm(self.model.embedding, axis=1, keepdims=True)
 
     def __getitem__(self, word):
         index = self.vocabulary.word_to_index.get(word)
         if index is not None:
-            return self.model.embedding[index]
+            return self.norm_embedding[index]
         else:
             raise ValueError(f"Word '{word}' not found in vocabulary")
         
     def closest_words(self, word, top_k=5):
         embedding = self[word]
-        similarities = np.dot(self.model.embedding, embedding)
+        similarities = np.dot(self.norm_embedding, embedding)
         best_indices = np.argsort(similarities)[-top_k-1:-1][::-1]
         return [self.vocabulary.index_to_word[i] for i in best_indices]
     
