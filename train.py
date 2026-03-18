@@ -11,13 +11,15 @@ class Model:
         init_range = 0.5 / embedding_dim
         return np.random.uniform(-init_range, init_range, (vocabulary_size, embedding_dim)).astype(np.float32)
     
-    def update(self, center_word, context_word, label, learning_rate=0.01):
+    def update(self, center_word, context_word, label, learning_rate):
         # forward pass
         u = self.embedding[center_word]
         v = self.context_embedding[context_word]
         z = np.dot(u, v)
         p = 1 / (1 + np.exp(-z))
-        loss = - (label * np.log(p) + (1 - label) * np.log(1-p))
+
+        clip_p = np.clip(p, 1e-8, 1 - 1e-8)
+        loss = - (label * np.log(clip_p) + (1 - label) * np.log(1-clip_p))
 
         # The backward pass is:
         # dL/dz = sigmoid(z) - label
@@ -72,37 +74,44 @@ class SkipGramLoader:
             # negative samples
             for _ in range(self.negative_samples):
                 # TODO: sampling distribution
-                negative_word = np.random.choice(self.dataset)
+                negative_word = self.dataset[np.random.randint(0, len(self.dataset))]
                 yield center_word, negative_word, 0
 
 
 class Trainer:
-    def __init__(self, dataset_path, embedding_dim, epochs):
+    def __init__(self, dataset_path, embedding_dim, context_size, negative_samples, epochs, learning_rate):
         with open(dataset_path, 'r') as f:
             words = f.read().split()
 
         self.vocabulary = Vocabulary(words)
         self.data = [ self.vocabulary.word_to_index[w] for w in words ]
-        self.data_loader = SkipGramLoader(self.data, context_size=5, negative_samples=5)
+        self.data_loader = SkipGramLoader(self.data, context_size=context_size, negative_samples=negative_samples)
         self.model = Model(self.vocabulary.size, embedding_dim)
 
-    def train(self, epochs):
-        for epoch in range(1, epochs + 1):
+        self.epochs = epochs
+        self.learning_rate = learning_rate
+
+    def train(self):
+        for epoch in range(1, self.epochs + 1):
             print(f"Epoch {epoch} started...")
             loss = self.train_epoch()
             print(f"Epoch {epoch} loss: {loss}")
 
     def train_epoch(self):
-        avg_loss = 0
+        loss = 0.0
         n = 0
-        
         for center, context, label in self.data_loader:
-            loss = self.model.update(center, context, label)
-            avg_loss += (loss - avg_loss) / (n + 1)
+            loss += self.model.update(center, context, label, self.learning_rate)
             n += 1
-        
-        return avg_loss
 
+            if (n + 1) % 1000 == 0:
+                max_norm = np.max(np.linalg.norm(self.model.embedding, axis=1))
+                max_norm_idx = np.argmax(np.linalg.norm(self.model.embedding, axis=1))
+                max_norm_word = self.vocabulary.index_to_word[max_norm_idx]
+                avg_norm = np.mean(np.linalg.norm(self.model.embedding, axis=1))
+                print(f"Step {n + 1}: Max embedding norm = {max_norm:.4f} (word: '{max_norm_word}'), Avg norm = {avg_norm:.4f}")
+
+        return loss
 
 class Embedder:
     def __init__(self, model, vocabulary):
@@ -127,14 +136,17 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument('--dataset', type=str, help='path to the dataset')
     parser.add_argument('--embedding_dim', type=int, help='dimension of the word embeddings')
+    parser.add_argument('--context_size', type=int, help='size of the context window', default=3)
+    parser.add_argument('--negative_samples', type=int, help='number of negative samples per positive sample', default=10)
     parser.add_argument('--epochs', type=int, help='number of training epochs', default=5)
+    parser.add_argument('--learning_rate', type=float, help='learning rate', default=0.01)
     parser.add_argument('--output_path', type=str, help='path to save the embedder', default='embedder.pkl')
     args = parser.parse_args()
 
-    trainer = Trainer(args.dataset, args.embedding_dim, args.epochs)
+    trainer = Trainer(args.dataset, args.embedding_dim, args.context_size, args.negative_samples, args.epochs, args.learning_rate)
     print("Loaded dataset")
     print("Training ...")
-    trainer.train(args.epochs)
+    trainer.train()
     print("Training Completed")
 
 
