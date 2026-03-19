@@ -143,7 +143,7 @@ if __name__ == "__main__":
     parser.add_argument('--context_size', type=int, help='maximum distance between center word and context word', default=3)
     parser.add_argument('--negative_samples', type=int, help='number of negative samples per positive sample', default=5)
     parser.add_argument('--epochs', type=int, help='number of training epochs', default=5)
-    parser.add_argument('--learning_rate', type=float, help='learning rate', default=0.01)
+    parser.add_argument('--learning_rate', type=float, help='learning rate', default=0.025)
     parser.add_argument('--output_path', type=str, help='path to save the embedder', default='embedder.pkl')
     args = parser.parse_args()
 
