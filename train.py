@@ -14,8 +14,8 @@ class Model:
     
     def update(self, center_word, context_word, label, learning_rate):
         # forward pass
-        u = self.embedding[center_word]
-        v = self.context_embedding[context_word]
+        u = self.embedding[center_word].copy()
+        v = self.context_embedding[context_word].copy()
         z = np.dot(u, v)
         p = 1 / (1 + np.exp(-z))
 
