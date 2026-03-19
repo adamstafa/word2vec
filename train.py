@@ -9,8 +9,7 @@ class Model:
         self.context_embedding = self._random_embedding(vocabulary_size, embedding_dim)
 
     def _random_embedding(self, vocabulary_size, embedding_dim):
-        init_range = 0.5 / embedding_dim
-        return np.random.uniform(-init_range, init_range, (vocabulary_size, embedding_dim)).astype(np.float32)
+        return np.random.normal(0.0, np.sqrt(1.0 / embedding_dim), (vocabulary_size, embedding_dim)).astype(np.float32)
     
     def update(self, center_word, context_word, label, learning_rate):
         # forward pass
