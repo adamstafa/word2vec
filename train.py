@@ -125,6 +125,7 @@ class Trainer:
 
         return loss
 
+
 class Embedder:
     def __init__(self, model, vocabulary):
         self.model = model
@@ -138,12 +139,11 @@ class Embedder:
         else:
             raise ValueError(f"Word '{word}' not found in vocabulary")
         
-    def closest_words(self, word, top_k=5):
-        embedding = self[word]
+    def closest_words(self, embedding, top_k=5):
         similarities = np.dot(self.norm_embedding, embedding)
         best_indices = np.argsort(similarities)[-top_k-1:-1][::-1]
         return [self.vocabulary.index_to_word[i] for i in best_indices]
-    
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -161,7 +161,6 @@ if __name__ == "__main__":
     print("Training ...")
     trainer.train()
     print("Training Completed")
-
 
     embedder = Embedder(trainer.model, trainer.vocabulary)
     with open(args.output_path, 'wb') as f:
