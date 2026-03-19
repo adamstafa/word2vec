@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pickle
+from collections import Counter
 
 class Model:
     def __init__(self, vocabulary_size, embedding_dim):
@@ -49,10 +50,19 @@ class Vocabulary:
 
 
 class SkipGramLoader:
-    def __init__(self, dataset, context_size, negative_samples):
+    def __init__(self, dataset, context_size, negative_samples, negative_sample_exponent=0.75, skip_threshold=1e-5):
         self.dataset = dataset
         self.context_size = context_size
         self.negative_samples = negative_samples
+        self.skip_threshold = skip_threshold
+
+        # negative sampling distribution
+        counts = Counter(dataset)
+        self.word_freq = np.array([ counts[i] for i in range(len(counts)) ], dtype=np.float32)
+        self.word_freq /= np.sum(self.word_freq)
+        self.negative_sample_dist = self.word_freq ** negative_sample_exponent
+        self.negative_sample_dist /= np.sum(self.negative_sample_dist)
+        
 
     def __iter__(self):
         c = self.context_size
@@ -60,6 +70,10 @@ class SkipGramLoader:
             window = self.dataset[i : i + 2*c + 1]
             center_word = window[c]
             context = window[:c] + window[c+1:]
+
+            skip_prob = max(0, 1 - np.sqrt(self.skip_threshold / self.word_freq[center_word]))
+            if np.random.rand() < skip_prob:
+                continue
 
             for skip_gram in self.generate_skip_grams(center_word, context):
                 yield skip_gram
@@ -72,9 +86,7 @@ class SkipGramLoader:
             yield center_word, context_word, 1
 
             # negative samples
-            for _ in range(self.negative_samples):
-                # TODO: sampling distribution
-                negative_word = self.dataset[np.random.randint(0, len(self.dataset))]
+            for negative_word in np.random.choice(self.negative_sample_dist.size, p=self.negative_sample_dist, size=self.negative_samples):
                 yield center_word, negative_word, 0
 
 
