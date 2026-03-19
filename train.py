@@ -111,17 +111,8 @@ class Trainer:
 
     def train_epoch(self):
         loss = 0.0
-        n = 0
         for center, context, label in self.data_loader:
             loss += self.model.update(center, context, label, self.learning_rate)
-            n += 1
-
-            if (n + 1) % 1000 == 0:
-                max_norm = np.max(np.linalg.norm(self.model.embedding, axis=1))
-                max_norm_idx = np.argmax(np.linalg.norm(self.model.embedding, axis=1))
-                max_norm_word = self.vocabulary.index_to_word[max_norm_idx]
-                avg_norm = np.mean(np.linalg.norm(self.model.embedding, axis=1))
-                print(f"Step {n + 1}: Max embedding norm = {max_norm:.4f} (word: '{max_norm_word}'), Avg norm = {avg_norm:.4f}")
 
         return loss
 
