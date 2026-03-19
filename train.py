@@ -1,6 +1,7 @@
 import argparse
 import numpy as np
 import pickle
+import os
 from collections import Counter
 
 class Model:
@@ -90,7 +91,7 @@ class SkipGramLoader:
 
 
 class Trainer:
-    def __init__(self, dataset_path, embedding_dim, context_size, negative_samples, epochs, learning_rate):
+    def __init__(self, dataset_path, embedding_dim, context_size, negative_samples, epochs, learning_rate, save_path):
         with open(dataset_path, 'r') as f:
             words = f.read().split()
 
@@ -101,19 +102,25 @@ class Trainer:
 
         self.epochs = epochs
         self.learning_rate = learning_rate
+        self.save_path = save_path
+        os.makedirs(save_path, exist_ok=True)
 
     def train(self):
         for epoch in range(1, self.epochs + 1):
             print(f"Epoch {epoch} started...")
             loss = self.train_epoch()
             print(f"Epoch {epoch} loss: {loss}")
+            self.save(f"epoch_{epoch}.pkl")
 
     def train_epoch(self):
         loss = 0.0
         for center, context, label in self.data_loader:
             loss += self.model.update(center, context, label, self.learning_rate)
-
         return loss
+    
+    def save(self, filename):
+        with open(f"{self.save_path}/{filename}", 'wb') as f:
+            pickle.dump(Embedder(self.model, self.vocabulary), f)
 
 
 class Embedder:
@@ -143,16 +150,14 @@ if __name__ == "__main__":
     parser.add_argument('--negative_samples', type=int, help='number of negative samples per positive sample', default=5)
     parser.add_argument('--epochs', type=int, help='number of training epochs', default=5)
     parser.add_argument('--learning_rate', type=float, help='learning rate', default=0.025)
-    parser.add_argument('--output_path', type=str, help='path to save the embedder', default='embedder.pkl')
+    parser.add_argument('--save_path', type=str, help='path to save the embedder', default='embedder')
     args = parser.parse_args()
 
-    trainer = Trainer(args.dataset, args.embedding_dim, args.context_size, args.negative_samples, args.epochs, args.learning_rate)
+    trainer = Trainer(args.dataset, args.embedding_dim, args.context_size, args.negative_samples, args.epochs, args.learning_rate, args.save_path)
     print("Loaded dataset")
     print("Training ...")
     trainer.train()
     print("Training Completed")
 
-    embedder = Embedder(trainer.model, trainer.vocabulary)
-    with open(args.output_path, 'wb') as f:
-        pickle.dump(embedder, f)
-    print(f"Saved emebedder to {args.output_path}")
+    trainer.save("final.pkl")
+    print("Saved final model")
