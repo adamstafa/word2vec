@@ -49,6 +49,23 @@ class Vocabulary:
         self.size = len(self.word_to_index)
 
 
+class NegativeSampler:
+    def __init__(self, word_freq, negative_sample_exponent=0.75, batch_size=4096):
+        self.word_freq = word_freq
+        self.negative_sample_dist = self.word_freq ** negative_sample_exponent
+        self.negative_sample_dist /= np.sum(self.negative_sample_dist)
+        self.batch_size = batch_size
+        self.buffer = np.array([], dtype=np.int32) # buffer for faster sampling
+        self.ptr = 0
+
+    def sample(self, num_samples):
+        if self.ptr + num_samples > len(self.buffer):
+            self.buffer = np.random.choice(self.negative_sample_dist.size, p=self.negative_sample_dist, size=self.batch_size)
+            self.ptr = 0
+        self.ptr += num_samples
+        return self.buffer[self.ptr : self.ptr + num_samples]
+
+
 class SkipGramLoader:
     def __init__(self, dataset, context_size, negative_samples, negative_sample_exponent=0.75, skip_threshold=1e-5):
         self.dataset = dataset
@@ -60,9 +77,7 @@ class SkipGramLoader:
         counts = Counter(dataset)
         self.word_freq = np.array([ counts[i] for i in range(len(counts)) ], dtype=np.float32)
         self.word_freq /= np.sum(self.word_freq)
-        self.negative_sample_dist = self.word_freq ** negative_sample_exponent
-        self.negative_sample_dist /= np.sum(self.negative_sample_dist)
-        
+        self.negative_sampler = NegativeSampler(self.word_freq, negative_sample_exponent=negative_sample_exponent)
 
     def __iter__(self):
         c = self.context_size
@@ -75,9 +90,7 @@ class SkipGramLoader:
             if np.random.rand() < skip_prob:
                 continue
 
-            for skip_gram in self.generate_skip_grams(center_word, context):
-                yield skip_gram
-            
+            yield from self.generate_skip_grams(center_word, context)
 
     def generate_skip_grams(self, center_word, context):
         # generates (center, context, label) tuples
@@ -86,7 +99,7 @@ class SkipGramLoader:
             yield center_word, context_word, 1
 
             # negative samples
-            for negative_word in np.random.choice(self.negative_sample_dist.size, p=self.negative_sample_dist, size=self.negative_samples):
+            for negative_word in self.negative_sampler.sample(self.negative_samples):
                 yield center_word, negative_word, 0
 
 
