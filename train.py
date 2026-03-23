@@ -1,6 +1,5 @@
 import argparse
 import numpy as np
-import pickle
 import os
 from collections import Counter
 
@@ -123,7 +122,7 @@ class Trainer:
             print(f"Epoch {epoch} started...")
             loss = self.train_epoch()
             print(f"Epoch {epoch} loss: {loss}")
-            self.save(f"epoch_{epoch}.pkl")
+            self.save(f"epoch_{epoch}.npz")
 
     def train_epoch(self):
         loss = 0.0
@@ -132,27 +131,8 @@ class Trainer:
         return loss
     
     def save(self, filename):
-        with open(f"{self.save_path}/{filename}", 'wb') as f:
-            pickle.dump(Embedder(self.model, self.vocabulary), f)
-
-
-class Embedder:
-    def __init__(self, model, vocabulary):
-        self.model = model
-        self.vocabulary = vocabulary
-        self.norm_embedding = self.model.embedding / np.linalg.norm(self.model.embedding, axis=1, keepdims=True)
-
-    def __getitem__(self, word):
-        index = self.vocabulary.word_to_index.get(word)
-        if index is not None:
-            return self.norm_embedding[index]
-        else:
-            raise ValueError(f"Word '{word}' not found in vocabulary")
-        
-    def closest_words(self, embedding, top_k=5):
-        similarities = np.dot(self.norm_embedding, embedding)
-        best_indices = np.argsort(similarities)[-top_k-1:-1][::-1]
-        return [self.vocabulary.index_to_word[i] for i in best_indices]
+        vocabulary = np.array([ self.vocabulary.index_to_word[i] for i in range(self.vocabulary.size) ])
+        np.savez_compressed(f"{self.save_path}/{filename}", embedding=self.model.embedding, context_embedding=self.model.context_embedding, vocabulary=vocabulary)
 
 
 if __name__ == "__main__":
@@ -172,5 +152,5 @@ if __name__ == "__main__":
     trainer.train()
     print("Training Completed")
 
-    trainer.save("final.pkl")
+    trainer.save("final.npz")
     print("Saved final model")
