@@ -1,8 +1,31 @@
 # Word2vec
-An implementation of Word2vec from-scratch using the skip-gram formulation with negative sampling.
+A simple word2vec implementation with numpy
+
+## Features
+* Skip-gram model
+* Negative sampling
+* Subsampling of frequent words
+* Evaluation on WordSim353 and analogies dataset
+* Comparison with Gensim implementation
 
 ## Results
-I trained the model on the text8 corpus and the model was able to learn similar words and some analogies. The performance is comparable to the [Gensim](https://radimrehurek.com/gensim/) implementation of word2vec. See the eval notebook.
+I trained the model on the text8 corpus and the model was able to learn the semantic and syntactic relationships between words. The performance is comparable to the [Gensim](https://radimrehurek.com/gensim/) implementation of word2vec.
+See the [eval notebook](./eval.ipynb) for the full results.
+
+### Closest words
+```
+october    -> [november, june, december, july, april]
+oxygen	   -> [dioxide, nitrogen, hydrogen, monoxide, hydrogenase]
+washington -> [illinois, ohio, brazos, maryland, baltimore]
+```
+
+### Analogies
+```
+man : king :: woman : ?       -> queen
+fast : faster :: slow : ?     -> slower
+quick : quickly :: slow : ?   -> slowly
+```
+
 
 ## Used Datasets:
 - text8: [http://mattmahoney.net/dc/text8.zip](http://mattmahoney.net/dc/text8.zip)
