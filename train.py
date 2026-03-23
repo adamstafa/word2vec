@@ -61,8 +61,9 @@ class NegativeSampler:
         if self.ptr + num_samples > len(self.buffer):
             self.buffer = np.random.choice(self.negative_sample_dist.size, p=self.negative_sample_dist, size=self.batch_size)
             self.ptr = 0
+        samples = self.buffer[self.ptr : self.ptr + num_samples]
         self.ptr += num_samples
-        return self.buffer[self.ptr : self.ptr + num_samples]
+        return samples
 
 
 class SkipGramLoader:
@@ -141,7 +142,7 @@ if __name__ == "__main__":
     parser.add_argument('--embedding_dim', type=int, help='dimension of the word embeddings', default=100)
     parser.add_argument('--context_size', type=int, help='maximum distance between center word and context word', default=5)
     parser.add_argument('--negative_samples', type=int, help='number of negative samples per positive sample', default=5)
-    parser.add_argument('--epochs', type=int, help='number of training epochs', default=50)
+    parser.add_argument('--epochs', type=int, help='number of training epochs', default=10)
     parser.add_argument('--learning_rate', type=float, help='learning rate', default=0.025)
     parser.add_argument('--save_path', type=str, help='path to save the embedder', default='embedder')
     args = parser.parse_args()
