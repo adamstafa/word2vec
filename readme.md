@@ -28,7 +28,7 @@ quick : quickly :: slow : ?   -> slowly
 
 
 ## Used Datasets:
-- text8: [http://mattmahoney.net/dc/text8.zip](http://mattmahoney.net/dc/text8.zip)
+- text8: [https://mattmahoney.net/dc/text8.zip](https://mattmahoney.net/dc/text8.zip)
 - wordsim 353: [https://gabrilovich.com/resources/data/wordsim353/wordsim353.html](https://gabrilovich.com/resources/data/wordsim353/wordsim353.html)
 - analogies [https://www.fit.vut.cz/person/imikolov/public/rnnlm/word-test.v1.txt](https://www.fit.vut.cz/person/imikolov/public/rnnlm/word-test.v1.txt)
 
